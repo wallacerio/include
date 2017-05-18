@@ -1,5 +1,5 @@
 /**
- * include v1.3 - 29/09/2016
+ * include v1.4
  * plugin for include file extern into document html
  * 
  * by Wallace Rio <wallrio@gmail.com>
@@ -76,13 +76,16 @@ window.include = (function(target,options){
 
                 xhr.upload.onprogress = function (e) {
                     if (e.lengthComputable) {
+                        if(progress)
                         progress(e.loaded,e.total);          
                     }
                 }
                 xhr.upload.onloadstart = function (e) {             
+                    if(progress)
                     progress(0,e.total);
                 }
                 xhr.upload.onloadend = function (e) {             
+                    if(progress)
                     progress(e.loaded,e.total);
                 }
                 xhr.upload.onprogress = function (e) {
@@ -126,7 +129,7 @@ window.include = (function(target,options){
              * @param  {[integer]} i [posição do script na lista]
              *
              */
-            runScript:function(i){                
+            runScript:function(i,callback){                
                 var scriptArray = funcs.listScripts;               
                 var scriptContent = scriptArray[i] || null;
                 
@@ -139,7 +142,7 @@ window.include = (function(target,options){
 
                 // captura os parametros do script origem e inclui no script destino
                 for (var a = 0, atts = scriptContent.attributes, n = atts.length; a < n; a++){                   
-                    script.setAttribute(atts[a].nodeName,atts[a].nodeValue);
+                    script.setAttribute(atts[a].nodeName,atts[a].value);
                 }
                 if(script_src) script.src  = script_src;                          
                 if(script_content) script.text  = script_content;
@@ -150,17 +153,25 @@ window.include = (function(target,options){
                 script.onload = function(){
                     if(getOnload) getOnload();     
 
+                    if(callback)
+                        callback();
+
                     funcs.runScript(i+1);
                 }
 
                 script.onerror = function(){
                     if(getOnError) getOnError();
+                    
+                    if(callback)
+                        callback();
+
                     funcs.runScript(i+1);
                 }
 
                 scriptContent.parentNode.insertBefore(script, scriptContent.nextSibling);
                 script.parentNode.removeChild(script);
-
+                
+                
             },
             listScripts:null,
 
@@ -218,10 +229,16 @@ window.include = (function(target,options){
                          
                 var scriptArray = targetAdjust.querySelectorAll('script');
                 funcs.listScripts = scriptArray;
-                funcs.runScript(0);
+                funcs.runScript(0,function(){                  
+                    if(callback)
+                        callback(sourceHTML);    
+                });
                 
-                if(callback)
-                    callback(sourceHTML);
+                if(scriptArray.length<1){
+                    if(callback)
+                        callback(sourceHTML); 
+                }
+                
             },
 
             /**
